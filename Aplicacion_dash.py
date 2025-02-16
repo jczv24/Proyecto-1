@@ -37,7 +37,8 @@ app.layout = html.Div([
     # Visualizaciones
     html.Div([
         dcc.Graph(id='histograma-precios'),
-        dcc.Graph(id='dispersion-precio-tamano')
+        dcc.Graph(id='dispersion-precio-tamano'),
+        dcc.Graph(id='mapa-precios')
     ], style={'width': '65%', 'display': 'inline-block', 'padding': '10px'}),
     
     # Estadísticas Resumidas
@@ -48,6 +49,7 @@ app.layout = html.Div([
 @app.callback(
     [Output('histograma-precios', 'figure'),
      Output('dispersion-precio-tamano', 'figure'),
+     Output('mapa-precios', 'figure'),
      Output('estadisticas-resumen', 'children')],
     [Input('ciudad-filtro', 'value'),
      Input('habitaciones-filtro', 'value')]
@@ -68,6 +70,20 @@ def actualizar_graficos(estados, habitaciones):
                           title='Precio vs Tamaño (ft²)', 
                           labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'})
     
+    # Mapa de Precios por Estado
+    promedio_estado = df_filtrado.groupby('state')['price'].mean().reset_index()
+    fig_mapa = px.choropleth(
+        promedio_estado,
+        locations='state',         # Nombre de los estados
+        locationmode='USA-states', # Modo para estados de EE.UU.
+        color='price',             # Variable a colorear
+        hover_name='state',        # Información al pasar el cursor
+        color_continuous_scale='Blues',
+        scope='usa',               # Limita el mapa a EE.UU.
+        labels={'price': 'Precio Promedio'}
+    )
+    fig_mapa.update_layout(title_text='Precio Promedio de Arrendamiento por Estado')
+    
     # Estadísticas Resumidas
     precio_promedio = df_filtrado['price'].mean()
     precio_mediana = df_filtrado['price'].median()
@@ -76,7 +92,7 @@ def actualizar_graficos(estados, habitaciones):
     Precio Mediana: ${precio_mediana:,.2f}
     """
     
-    return fig_hist, fig_disp, estadisticas
+    return fig_hist, fig_disp,fig_mapa, estadisticas
 
 # Ejecutar la app
 if __name__ == '__main__':
