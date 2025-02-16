@@ -92,7 +92,7 @@ def actualizar_graficos(estados, habitaciones):
     Precio Mediana: ${precio_mediana:,.2f}
     """
     
-    return fig_hist, fig_disp,fig_mapa, estadisticas
+    return fig_hist, fig_disp, fig_mapa, estadisticas
 
 # Ejecutar la app
 if __name__ == '__main__':
