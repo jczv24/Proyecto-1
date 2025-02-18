@@ -21,7 +21,7 @@ app.layout = html.Div([
         className="mb-4"
     ),
     
-    # Filtros
+    # Filtros y estadisticas resumidas
     dbc.Row([
         dbc.Col([
             html.Label('Estado:', className="form-label"),
@@ -45,23 +45,25 @@ app.layout = html.Div([
                 multi=True,
                 style={'width': '100%'}
             ),
-        ], width=4)
-    ], className="mb-4"),
+        ], width=4),
+        
+        dbc.Col(html.Div(id='estadisticas-resumen', className="alert alert-info", style = {'height': '100px', 'display': 'flex', 'align-items': 'center'}), width=4)
+    ], className="mb-0"),
 
     # Visualizaciones
     dbc.Row([
         dbc.Col(dcc.Graph(id='histograma-precios'), width=6),
         dbc.Col(dcc.Graph(id='dispersion-precio-tamano'), width=6)
-    ], className="mb-4"),
+    ], className="mb-0"),
 
     dbc.Row([
-        dbc.Col(dcc.Graph(id='mapa-precios'), width=12)
-    ], className="mb-4"),
+        dbc.Col(dcc.Graph(id='mapa-precios', style = {'height': '800px'}), width=12)
+    ], className="mb-0")
 
     # Estadísticas Resumidas
-    dbc.Row([
-        dbc.Col(html.Div(id='estadisticas-resumen', className="alert alert-info"), width=12)
-    ], className="mb-4")
+    #dbc.Row([
+        #dbc.Col(html.Div(id='estadisticas-resumen', className="alert alert-info"), width=12)
+    #], className="mb-0")
 ])
 
 # Callbacks para actualizar gráficos y estadísticas
