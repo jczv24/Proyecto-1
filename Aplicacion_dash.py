@@ -6,10 +6,12 @@ import plotly.express as px
 import pandas as pd
 
 # Cargar datos (ajusta la ruta según tu archivo)
-df = pd.read_csv('datos_apartamentos_rent.csv', encoding_errors = 'replace', delimiter = ';')
+df = pd.read_csv('datos_apartamentos_rent.csv', encoding_errors='replace', delimiter=';')
 
-# Inicializar la app Dash con el estilo LUX
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LITERA])
+# Inicializar la app Dash con un tema de Bootstrap
+external_stylesheets = [dbc.themes.LUX]  # Cambiar el tema según preferencia
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # Layout del tablero
 app.layout = html.Div([
@@ -28,18 +30,20 @@ app.layout = html.Div([
                 options=[{'label': estado, 'value': estado} for estado in df['state'].dropna().unique()],
                 value=None,
                 placeholder='Selecciona un estado',
-                multi=True
+                multi=True,
+                style={'width': '100%'}
             ),
-        ], style={'width': '48%', 'display': 'inline-block', 'padding': '10px'}),
+        ], width=4),
 
-        html.Div([
-            html.Label('Número de habitaciones:'),
+        dbc.Col([
+            html.Label('Número de habitaciones:', className="form-label"),
             dcc.Dropdown(
                 id='habitaciones-filtro',
                 options=[{'label': str(hab), 'value': hab} for hab in sorted(df['bedrooms'].dropna().unique())],
                 value=None,
                 placeholder='Selecciona número de habitaciones',
-                multi=True
+                multi=True,
+                style={'width': '100%'}
             ),
         ], width=4),
         
@@ -67,9 +71,7 @@ app.layout = html.Div([
     [Output('histograma-precios', 'figure'),
      Output('dispersion-precio-tamano', 'figure'),
      Output('mapa-precios', 'figure'),
-     Output('precio-promedio', 'children'),
-     Output('precio-mediano', 'children'),
-     Output('desviacion-estandar', 'children')],  # Agregado Output para la desviación estándar
+     Output('estadisticas-resumen', 'children')],
     [Input('ciudad-filtro', 'value'),
      Input('habitaciones-filtro', 'value')]
 )
@@ -82,11 +84,14 @@ def actualizar_graficos(estados, habitaciones):
         df_filtrado = df_filtrado[df_filtrado['bedrooms'].isin(habitaciones)]
     
     # Histograma de precios
-    fig_hist = px.histogram(df_filtrado, x='price', nbins=50)
+    fig_hist = px.histogram(df_filtrado, x='price', nbins=50, title='Distribución de Precios', 
+                             color_discrete_sequence=["#1f77b4"])
     
     # Gráfico de dispersión (Precio vs Tamaño)
     fig_disp = px.scatter(df_filtrado, x='square_feet', y='price', color='bedrooms',
-                          labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'})
+                          title='Precio vs Tamaño (ft²)', 
+                          labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'},
+                          color_continuous_scale='Viridis')
     
     # Mapa de Precios por Estado
     promedio_estado = df_filtrado.groupby('state')['price'].mean().reset_index()
@@ -100,14 +105,17 @@ def actualizar_graficos(estados, habitaciones):
         scope='usa',               # Limita el mapa a EE.UU.
         labels={'price': 'Precio Promedio'}
     )
-    fig_mapa.update_layout()
-    
+    fig_mapa.update_layout(title_text='Precio Promedio de Arrendamiento por Estado')
+
     # Estadísticas Resumidas
     precio_promedio = df_filtrado['price'].mean()
     precio_mediana = df_filtrado['price'].median()
-    desviacion_estandar = df_filtrado['price'].std()  # Desviación estándar
+    estadisticas = f"""
+    Precio Promedio: ${precio_promedio:,.2f}  
+    Precio Mediana: ${precio_mediana:,.2f}
+    """
     
-    return fig_hist, fig_disp, fig_mapa, f"${precio_promedio:,.2f}", f"${precio_mediana:,.2f}", f"${desviacion_estandar:,.2f}"  # Incluye la desviación estándar
+    return fig_hist, fig_disp, fig_mapa, estadisticas
 
 # Ejecutar la app
 if __name__ == '__main__':
