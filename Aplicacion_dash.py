@@ -6,7 +6,7 @@ import plotly.express as px
 import pandas as pd
 
 # Cargar datos (ajusta la ruta según tu archivo)
-df = pd.read_csv('/Users/melo/Downloads/datos_limpios.csv', encoding_errors='replace', delimiter=',')
+df = pd.read_csv('datos_limpios.csv', encoding_errors='replace', delimiter=',')
 
 # Inicializar la app Dash con un tema de Bootstrap
 external_stylesheets = [dbc.themes.LUX]  # Cambiar el tema según preferencia
