@@ -6,7 +6,7 @@ import plotly.express as px
 import pandas as pd
 
 # Cargar datos (ajusta la ruta según tu archivo)
-df = pd.read_csv('datos_apartamentos_rent.csv', encoding_errors='replace', delimiter=';')
+df = pd.read_csv('/Users/melo/Downloads/datos_limpios.csv', encoding_errors='replace', delimiter=',')
 
 # Inicializar la app Dash con un tema de Bootstrap
 external_stylesheets = [dbc.themes.LUX]  # Cambiar el tema según preferencia
@@ -59,7 +59,7 @@ app.layout = html.Div([
     max=df['square_feet'].max(),
     step=10,
     marks={int(i): {'label': str(int(i)), 'style': {'transform': 'rotate(-45deg)', 'white-space': 'nowrap'}} 
-           for i in range(int(df['square_feet'].min()), int(df['square_feet'].max()), 1000)},
+           for i in range(int(df['square_feet'].min()), int(df['square_feet'].max()), 50)},
     value=[df['square_feet'].min(), df['square_feet'].max()]
 )
     ], class_name = "mb-3"),
