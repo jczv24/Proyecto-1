@@ -132,6 +132,31 @@ def actualizar_graficos(estados, habitaciones, tamanos):
     
     return fig_hist, fig_disp, fig_mapa #estadisticas
 
+@app.callback(
+    Output('square-feet-slider', 'min'),
+    Output('square-feet-slider', 'max'),
+    Output('square-feet-slider', 'value'),
+    Input('ciudad-filtro', 'value'),
+    Input('habitaciones-filtro', 'value')
+)
+def actualizar_slider(ciudad_seleccionada, habitaciones_seleccionadas):
+    df_filtrado = df.copy()
+
+    # Filtrar por estado (si se seleccionan)
+    if ciudad_seleccionada:
+        df_filtrado = df_filtrado[df_filtrado['state'].isin(ciudad_seleccionada)]
+    
+    # Filtrar por número de habitaciones (si se seleccionan)
+    if habitaciones_seleccionadas:
+        df_filtrado = df_filtrado[df_filtrado['bedrooms'].isin(habitaciones_seleccionadas)]
+    
+    # Determinar nuevos valores mínimos y máximos
+    min_sqft = df_filtrado['square_feet'].min()
+    max_sqft = df_filtrado['square_feet'].max()
+
+    return min_sqft, max_sqft, [min_sqft, max_sqft]
+
+
 # Ejecutar la app
 if __name__ == '__main__':
     app.run_server(debug=True)
