@@ -2,161 +2,189 @@ import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-import plotly.express as px
+import plotly.express as px 
 import pandas as pd
 
-# Cargar datos (ajusta la ruta según tu archivo)
+# Cargar datos
 df = pd.read_csv('datos_limpios.csv', encoding_errors='replace', delimiter=',')
+estados_unicos = sorted(df['state'].unique())
 
-# Inicializar la app Dash con un tema de Bootstrap
-external_stylesheets = [dbc.themes.LUX]  # Cambiar el tema según preferencia
-
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
-# Layout del tablero
+# Inicializar app
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LITERA])
+app.config.suppress_callback_exceptions = True
+# Layout del tablero con pestañas
 app.layout = html.Div([
-    # Título
-    dbc.Row(
-        dbc.Col(html.H1('Arrendamiento de Apartamentos', className="text-center text-primary"), width=12),
-        className="mb-4"
-    ),
-    
-    # Filtros y estadisticas resumidas
-    dbc.Row([
-        dbc.Col([
-            html.Label('Estado:', className="form-label"),
-            dcc.Dropdown(
-                id='ciudad-filtro',
-                options=[{'label': estado, 'value': estado} for estado in df['state'].dropna().unique()],
-                value=None,
-                placeholder='Selecciona un estado',
-                multi=True,
-                style={'width': '100%'}
-            ),
-        ], width=4),
-
-        dbc.Col([
-            html.Label('Número de habitaciones:', className="form-label"),
-            dcc.Dropdown(
-                id='habitaciones-filtro',
-                options=[{'label': str(hab), 'value': hab} for hab in sorted(df['bedrooms'].dropna().unique())],
-                value=None,
-                placeholder='Selecciona número de habitaciones',
-                multi=True,
-                style={'width': '100%'}
-            ),
-        ], width=4)
-        
-        #dbc.Col(html.Div(id='estadisticas-resumen', className="alert alert-info", style = {'height': '100px', 'display': 'flex', 'align-items': 'center'}), width=4)
-    ], className="mb-0"),
-    
-    # Slider del tamaño de los apartamentos
-    dbc.Row([
-        html.Label('Tamaño del apartamento (ft²):', className="form-label"),
-        dcc.RangeSlider(
-    id='square-feet-slider',
-    min=df['square_feet'].min(),
-    max=df['square_feet'].max(),
-    step=10,
-    marks={int(i): {'label': str(int(i)), 'style': {'transform': 'rotate(-45deg)', 'white-space': 'nowrap'}} 
-           for i in range(int(df['square_feet'].min()), int(df['square_feet'].max()), 50)},
-    value=[df['square_feet'].min(), df['square_feet'].max()]
-)
-    ], class_name = "mb-3"),
-
-    # Visualizaciones
-    dbc.Row([
-        dbc.Col(dcc.Graph(id='histograma-precios'), width=6),
-        dbc.Col(dcc.Graph(id='dispersion-precio-tamano'), width=6)
-    ], className="mb-0"),
-
-    dbc.Row([
-        dbc.Col(dcc.Graph(id='mapa-precios', style = {'height': '800px'}), width=12)
-    ], className="mb-0")
-
-    # Estadísticas Resumidas
-    #dbc.Row([
-        #dbc.Col(html.Div(id='estadisticas-resumen', className="alert alert-info"), width=12)
-    #], className="mb-0")
+    dcc.Tabs(id='tabs', value='tab1', children=[
+        dcc.Tab(label='Análisis de Datos', value='tab1'),
+        dcc.Tab(label='Predicción', value='tab2')
+    ]),
+    html.Div(id='tabs-content')
 ])
+
+# Contenido de las pestañas
+@app.callback(Output('tabs-content', 'children'), [Input('tabs', 'value')])
+def render_tab_content(tab):
+    if tab == 'tab1':
+        return html.Div([
+            html.H1('Arrendamiento de Apartamentos', style={'textAlign': 'center'}),
+            
+            # Filtros
+            html.Div([
+                html.Div([
+                    html.Label('Estado:'),
+                    dcc.Dropdown(
+                        id='ciudad-filtro',
+                        options=[{'label': estado, 'value': estado} for estado in df['state'].dropna().unique()],
+                        value=None,
+                        placeholder='Selecciona un estado',
+                        multi=True
+                    ),
+                ], style={'width': '48%', 'display': 'inline-block', 'padding': '10px'}),
+
+                html.Div([
+                    html.Label('Número de habitaciones:'),
+                    dcc.Dropdown(
+                        id='habitaciones-filtro',
+                        options=[{'label': str(hab), 'value': hab} for hab in sorted(df['bedrooms'].dropna().unique())],
+                        value=None,
+                        placeholder='Selecciona número de habitaciones',
+                        multi=True
+                    ),
+                ], style={'width': '48%', 'display': 'inline-block', 'padding': '10px'})
+            ], style={'display': 'flex', 'justify-content': 'space-between', 'padding': '10px'}),
+
+            # Estadísticas
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody([
+                    html.H4("Precio Promedio", className="card-title", style={'textAlign': 'center'}),
+                    html.P(id='precio-promedio', className="card-text", style={'textAlign': 'center'})
+                ]), color="dark", inverse=True), width=4),
+
+                dbc.Col(dbc.Card(dbc.CardBody([
+                    html.H4("Precio (Mediana)", className="card-title", style={'textAlign': 'center'}),
+                    html.P(id='precio-mediano', className="card-text", style={'textAlign': 'center'})
+                ]), color="dark", inverse=True), width=4),
+
+                dbc.Col(dbc.Card(dbc.CardBody([
+                    html.H4("Desviación Estándar", className="card-title", style={'textAlign': 'center'}),
+                    html.P(id='desviacion-estandar', className="card-text", style={'textAlign': 'center'})
+                ]), color="dark", inverse=True), width=4)
+            ], style={'padding': '20px'}),
+
+            # Gráficos
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody([
+                    html.H4('Distribución de Precios', style={'textAlign': 'center'}),
+                    dcc.Graph(id='histograma-precios')
+                ])), width=6),
+
+                dbc.Col(dbc.Card(dbc.CardBody([
+                    html.H4('Precio vs Tamaño (ft²)', style={'textAlign': 'center'}),
+                    dcc.Graph(id='dispersion-precio-tamano')
+                ])), width=6)
+            ]),
+
+            dbc.Card(dbc.CardBody([
+                html.H4('Precio Promedio por Estado', style={'textAlign': 'center'}),
+                dcc.Graph(id='mapa-precios')
+            ]))
+        ])
+    elif tab == 'tab2':
+        return html.Div([
+            
+            html.H1("Predicción del Precio de Apartamentos"),
+
+    # Entradas del formulario
+    html.Div([
+        html.Label("Número de baños:"),
+        dcc.Input(id='input-bathrooms', type='number', value=1, min=0),
+
+        html.Label("Número de habitaciones:"),
+        dcc.Input(id='input-bedrooms', type='number', value=1, min=0),
+
+        html.Label("Metros cuadrados:"),
+        dcc.Input(id='input-square_feet', type='number', value=50, min=10),
+
+        html.Label("Estado:"),
+        dcc.Dropdown(
+            id='input-state',
+            options=[{'label': estado, 'value': estado} for estado in estados_unicos],
+            value=estados_unicos[0]
+        ),
+
+        html.Label("Ciudad:"),
+        dcc.Dropdown(id='input-cityname', options=[], value=None),
+
+        html.Label("Permite mascotas (Cats, Dogs, None):"),
+        dcc.Input(id='input-pets_allowed', type='text', value='Cats,Dogs'),
+
+        html.Label("Fuente (RentLingo, Zillow, etc.):"),
+        dcc.Input(id='input-source', type='text', value='RentLingo'),
+
+        html.Label("Latitud:"),
+        dcc.Input(id='input-latitude', type='number', value=29.7714),
+
+        html.Label("Longitud:"),
+        dcc.Input(id='input-longitude', type='number', value=-95.4343),
+
+        html.Label("Conteo del cuerpo del anuncio:"),
+        dcc.Input(id='input-body_count', type='number', value=100, min=0),
+    ], style={'display': 'grid', 'grid-template-columns': '1fr', 'gap': '10px'}),
+
+    html.Br(),
+    html.Button('Predecir Precio', id='predict-button', n_clicks=0),
+    html.Br(), html.Br(),
+
+    # Salida de la predicción
+    html.Div(id='output-prediction')
+            
+        ])
+        
+# Callback para actualizar las ciudades según el estado
+@app.callback(
+    Output('input-cityname', 'options'),
+    Input('input-state', 'value')
+)
+def update_cities(selected_state):
+    ciudades = sorted(df[df['state'] == selected_state]['cityname'].unique())
+    return [{'label': ciudad, 'value': ciudad} for ciudad in ciudades]
 
 # Callbacks para actualizar gráficos y estadísticas
 @app.callback(
     [Output('histograma-precios', 'figure'),
      Output('dispersion-precio-tamano', 'figure'),
-     Output('mapa-precios', 'figure')],
-     #Output('estadisticas-resumen', 'children')],
+     Output('mapa-precios', 'figure'),
+     Output('precio-promedio', 'children'),
+     Output('precio-mediano', 'children'),
+     Output('desviacion-estandar', 'children')],
     [Input('ciudad-filtro', 'value'),
-     Input('habitaciones-filtro', 'value'),
-     Input('square-feet-slider', 'value')]
+     Input('habitaciones-filtro', 'value')]
 )
-def actualizar_graficos(estados, habitaciones, tamanos):
-    # Filtrar datos
-    df_filtrado = df[(df['square_feet'] >= tamanos[0]) & (df['square_feet'] <= tamanos[1])]
+def actualizar_graficos(estados, habitaciones):
+    df_filtrado = df.copy()
     if estados:
         df_filtrado = df_filtrado[df_filtrado['state'].isin(estados)]
     if habitaciones:
         df_filtrado = df_filtrado[df_filtrado['bedrooms'].isin(habitaciones)]
     
     # Histograma de precios
-    fig_hist = px.histogram(df_filtrado, x='price', nbins=50, title='Distribución de Precios', 
-                             color_discrete_sequence=["#1f77b4"])
+    fig_hist = px.histogram(df_filtrado, x='price', nbins=50)
     
-    # Gráfico de dispersión (Precio vs Tamaño)
+    # Dispersión Precio vs Tamaño
     fig_disp = px.scatter(df_filtrado, x='square_feet', y='price', color='bedrooms',
-                          title='Precio vs Tamaño (ft²)', 
-                          labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'},
-                          color_continuous_scale='Viridis')
+                          labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'})
     
     # Mapa de Precios por Estado
-    promedio_estado = df_filtrado.groupby('state')['price'].mean().reset_index()
-    fig_mapa = px.choropleth(
-        promedio_estado,
-        locations='state',         # Nombre de los estados
-        locationmode='USA-states', # Modo para estados de EE.UU.
-        color='price',             # Variable a colorear
-        hover_name='state',        # Información al pasar el cursor
-        color_continuous_scale='Blues',
-        scope='usa',               # Limita el mapa a EE.UU.
-        labels={'price': 'Precio Promedio'}
-    )
-    fig_mapa.update_layout(title_text='Precio Promedio de Arrendamiento por Estado')
-
-    # Estadísticas Resumidas
-    precio_promedio = df_filtrado['price'].mean()
-    precio_mediana = df_filtrado['price'].median()
-    estadisticas = f"""
-    Precio Promedio: ${precio_promedio:,.2f}  
-    Precio Mediana: ${precio_mediana:,.2f}
-    """
+    df_estado = df_filtrado.groupby('state')['price'].mean().reset_index()
+    fig_mapa = px.choropleth(df_estado, locations='state', locationmode='USA-states',
+                              color='price', color_continuous_scale='Viridis', scope='usa')
     
-    return fig_hist, fig_disp, fig_mapa #estadisticas
-
-@app.callback(
-    Output('square-feet-slider', 'min'),
-    Output('square-feet-slider', 'max'),
-    Output('square-feet-slider', 'value'),
-    Input('ciudad-filtro', 'value'),
-    Input('habitaciones-filtro', 'value')
-)
-def actualizar_slider(ciudad_seleccionada, habitaciones_seleccionadas):
-    df_filtrado = df.copy()
-
-    # Filtrar por estado (si se seleccionan)
-    if ciudad_seleccionada:
-        df_filtrado = df_filtrado[df_filtrado['state'].isin(ciudad_seleccionada)]
+    # Estadísticas
+    precio_promedio = f'${df_filtrado["price"].mean():,.2f}' if not df_filtrado.empty else 'N/A'
+    precio_mediano = f'${df_filtrado["price"].median():,.2f}' if not df_filtrado.empty else 'N/A'
+    desviacion_estandar = f'${df_filtrado["price"].std():,.2f}' if not df_filtrado.empty else 'N/A'
     
-    # Filtrar por número de habitaciones (si se seleccionan)
-    if habitaciones_seleccionadas:
-        df_filtrado = df_filtrado[df_filtrado['bedrooms'].isin(habitaciones_seleccionadas)]
-    
-    # Determinar nuevos valores mínimos y máximos
-    min_sqft = df_filtrado['square_feet'].min()
-    max_sqft = df_filtrado['square_feet'].max()
+    return fig_hist, fig_disp, fig_mapa, precio_promedio, precio_mediano, desviacion_estandar
 
-    return min_sqft, max_sqft, [min_sqft, max_sqft]
-
-
-# Ejecutar la app
 if __name__ == '__main__':
     app.run_server(debug=True)
