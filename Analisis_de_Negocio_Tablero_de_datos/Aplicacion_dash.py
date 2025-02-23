@@ -71,7 +71,7 @@ formulario_prediccion = dbc.Card(
 
         dbc.Row([
             dbc.Col([
-                dbc.Label("Metros cuadrados", className="fw-bold"),
+                dbc.Label("Tamaño(sq feet)", className="fw-bold"),
                 dbc.Input(id='input-square_feet', type='number', value=50, min=10, placeholder="Ejemplo: 100"),
             ], width=6),
 
