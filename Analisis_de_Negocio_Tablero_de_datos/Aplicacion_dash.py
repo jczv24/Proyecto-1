@@ -71,7 +71,7 @@ formulario_prediccion = dbc.Card(
 
         dbc.Row([
             dbc.Col([
-                dbc.Label("Tamaño(sq feet)", className="fw-bold"),
+                dbc.Label("Metros cuadrados", className="fw-bold"),
                 dbc.Input(id='input-square_feet', type='number', value=50, min=10, placeholder="Ejemplo: 100"),
             ], width=6),
 
@@ -291,12 +291,14 @@ def actualizar_graficos(estados, habitaciones):
     
     # Dispersión Precio vs Tamaño
     fig_disp = px.scatter(df_filtrado, x='square_feet', y='price', color='bedrooms',
-                          labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'})
+                          color_continuous_scale='Viridis_r', labels={'square_feet': 'Tamaño (ft²)', 'price': 'Precio'})
     
     # Mapa de Precios por Estado
     df_estado = df_filtrado.groupby('state')['price'].mean().reset_index()
     fig_mapa = px.choropleth(df_estado, locations='state', locationmode='USA-states',
-                              color='price', color_continuous_scale='Viridis', scope='usa')
+                              color='price', color_continuous_scale='Viridis_r', scope='usa')
+    
+    fig_mapa.update_layout(height = 700, margin={"r":0,"t":0,"l":0,"b":0})
     
     # Estadísticas
     precio_promedio = f'${df_filtrado["price"].mean():,.2f}' if not df_filtrado.empty else 'N/A'
